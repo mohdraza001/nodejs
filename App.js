@@ -20,7 +20,7 @@ const crypto=require('crypto');//it used for create token
 
 
 //database connection
-mongoose.connect("mongodb://localhost:27017/authmailer")
+mongoose.connect("mongodb+srv://razamohd:12QAZwsx@cluster0.gizdcu8.mongodb.net/test")
     .then(res => console.log("MongoDB Connected"))
     .catch(err => console.log("Error : " + err));
 //end
@@ -144,21 +144,16 @@ app.post("/postlogin", (req, res) => { //it login side post
 app.get("/regis", (req, res) => {//it is render the regis page
     res.render("regis");
 })
-app.post("/postregis",check("password").isLength({min:5}).withMessage('must be at least 5 chars long'),(req, res) => { // sbmit the 
-    const error=validationResult(req);
-    if(!error.isEmpty()){
-        return res.status(400).json(error.array())
-    }
-    else{
+app.post("/postregis",(req, res) => { // submit the data toward the database
     uploadSingle(req,res,(err)=>{
     if(err){
-        res.render("regis", { error:"fail to upload" })
+        res.render("regis", { error:"fail to upload" })// if any kind of error when upload file in particular folder
     }
     else
     {
-    let { email,uname, password} = req.body;
-    const hash = bcrypt.hashSync(password, saltRounds);
-    userModel.create({ username: uname,email:email,password: hash,status:0,image:req.file.filename})
+    let { email,uname, password} = req.body; //it is taken data from the form where you post
+    const hash = bcrypt.hashSync(password, saltRounds);//it is used for encrypt the password (With "salt round" they actually mean the cost factor)
+    userModel.create({ username: uname,email:email,password: hash,status:0,image:req.file.filename}) //Promises are used to handle asynchronous operations in JavaScript
     .then(data => {
             let mailOptions={
                 from:'razamohd371@gmail.com',
@@ -168,7 +163,7 @@ app.post("/postregis",check("password").isLength({min:5}).withMessage('must be a
                 context:{username:uname,email:email,_id:data._id
                 }
             }
-            transporter.sendMail(mailOptions,(err,info)=>{
+            transporter.sendMail(mailOptions,(err,info)=>{//if the mail is send then it is render
                 if(err){ console.log(err)}
                 else{
                      console.log("Mail send : "+info)
@@ -177,14 +172,14 @@ app.post("/postregis",check("password").isLength({min:5}).withMessage('must be a
             res.redirect("/login")
         })
         .catch(err => {
-            res.render("regis", { error: "User Already Registered" })
+            res.render("regis", { error: "User Already Registered" })//if the user already exist then it is throw the error
         })
     }
 })
-    }
+    
 
 })
-app.get("/activateaccount/:id",(req,res)=>{
+app.get("/activateaccount/:id",(req,res)=>{//if is used for verify the account 
     let username=req.params.id; 
     userModel.updateOne({_id:username},{$set:{status:1}},(err)=>{
         if(err){ console.log("Error")}
